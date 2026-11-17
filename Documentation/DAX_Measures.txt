@@ -1,0 +1,217 @@
+HR ANALYTICS DASHBOARD — DAX DOCUMENTATION
+===================================================================
+
+
+1. KPI MEASURES
+
+[Present Days]-------------------------------------------------------------------------------
+
+Total Present Value = 
+SUMX(
+    FinalData,
+    SWITCH(
+        FinalData[Value],
+
+        "P", 1,
+        "WFH", 1,
+        "HWFH", 0.5,
+
+        0
+    )
+)
+
+Present Days = FORMAT([Total Present Value], "#,##0")
+
+
+[WFH Days]-----------------------------------------------------------------------------------
+
+WFH Days = 
+CALCULATE(
+    COUNTROWS(FinalData),
+    FinalData[Value] = "WFH"
+)
+
+
+[Total Leave Days]-----------------------------------------------------------------------------
+
+Leave Days = 
+SUMX(
+    FinalData,
+    SWITCH(
+        FinalData[Value],
+
+        "PL", 1,
+        "SL", 1,
+        "BL", 1,
+        "FFL", 1,
+        "BRL", 1,
+        "LWP", 1,
+        "ML", 1,
+
+        "HPL", 0.5,
+        "HSL", 0.5,
+        "HLWP", 0.5,
+        "HML", 0.5,
+
+        0
+    )
+)
+
+
+[Working Days]-------------------------------------------------------------------------------
+
+Working Days = 
+FORMAT(CALCULATE(
+    COUNTROWS(FinalData),
+    FinalData[Value] <> "WO",
+    FinalData[Value] <> "HO",
+    FinalData[Value] <> BLANK()
+), "#,##0")
+
+
+[Attendance Rate]-----------------------------------------------------------------------------
+
+Attendance Rate = 
+DIVIDE(
+    [Total Present Value],
+    [Working Days],
+    0
+)
+
+
+2. CHART MEASURES
+
+
+[Status Days]----------------------------------------------------------------------------------
+
+Days = 
+SUMX(
+    FinalData,
+    SWITCH(
+        TRIM(FinalData[Value]),
+
+        "P", 1,
+
+        "WFH", 1,
+        "HWFH", 0.5,
+
+        "PL", 1,
+        "SL", 1,
+        "BL", 1,
+        "FFL", 1,
+        "BRL", 1,
+        "LWP", 1,
+        "ML", 1,
+
+        "HPL", 0.5,
+        "HSL", 0.5,
+        "HFFL", 0.5,
+        "HBRL", 0.5,
+        "HLWP", 0.5,
+        "HML", 0.5,
+
+        0
+    )
+)
+
+
+3. Calendar Table 
+
+Calendar = 
+ADDCOLUMNS(
+    CALENDAR(
+        MIN(FinalData[Date]),
+        MAX(FinalData[Date])
+    ),
+    "Month", FORMAT([Date], "MMMM"),
+    "Month Number", MONTH([Date]),
+    "Month Year", FORMAT([Date], "MMM yyyy"),
+    "Year", FORMAT([Date], "yyyy"),
+    "Day", FORMAT([Date], "dd"),
+    "Month Sort", YEAR([Date]) * 100 + MONTH([Date])
+)
+
+
+4. CALCULATED COLUMNS
+
+
+[WeekDay]-------------------------------------------------
+
+WeekDay = 
+FORMAT(FinalData[Date], "dddd")
+
+[Status Group]------------------------------------------------------------------------------
+
+Status Group = 
+SWITCH(
+    TRIM(FinalData[Value]),
+
+    "P", "On-site",
+
+    "WFH", "Work From Home",
+    "HWFH", "Work From Home",
+
+    "PL", "Leave",
+    "HPL", "Leave",
+    "SL", "Leave",
+    "HSL", "Leave",
+    "BL", "Leave",
+    "FFL", "Leave",
+    "HFFL", "Leave",
+    "BRL", "Leave",
+    "HBRL", "Leave",
+    "LWP", "Leave",
+    "HLWP", "Leave",
+    "ML", "Leave",
+    "HML", "Leave",
+
+    BLANK()
+)
+
+
+[Employee Selection]-------------------------------------------------------------------------
+
+
+Employee Selection = 
+FinalData[Name] & " (" & FinalData[Formatted Employee Code] & ")"
+
+
+[Cumulative Attendance Contribution]--------------------------------------------------------
+
+Attendance Contribution = 
+VAR CurrentName = FinalData[Name]
+VAR CurrentCode = FinalData[Employee Code]
+VAR CurrentDate = FinalData[Date]
+
+VAR TotalWorkingDays =
+    COUNTROWS(
+        FILTER(
+            ALL(FinalData),
+            FinalData[Name] = CurrentName
+                && FinalData[Employee Code] = CurrentCode
+                && FinalData[Value] <> "WO"
+                && FinalData[Value] <> "HO"
+                && NOT ISBLANK(FinalData[Value])
+        )
+    )
+
+VAR CumulativePresent =
+    SUMX(
+        FILTER(
+            ALL(FinalData),
+            FinalData[Name] = CurrentName
+                && FinalData[Employee Code] = CurrentCode
+                && FinalData[Date] <= CurrentDate
+        ),
+        SWITCH(
+            TRIM(FinalData[Value]),
+            "P", 1,
+            "WFH", 1,
+            "HWFH", 0.5,
+            0
+        )
+    )
+
+RETURN
+    DIVIDE(CumulativePresent, TotalWorkingDays, 0)
+
