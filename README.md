@@ -71,10 +71,10 @@ HR-Analytics-PowerBI/
 ## Dashboard Preview
 
 ### HR Analytics Dashboard
-![HR Analytics Dashboard](Screenshots/dashboard_overview.png)
+![HR Analytics Dashboard](Screenshots/Page 1.png)
 
 ### Employee 360° Analysis
-![Employee 360 Analysis](Screenshots/employee_360_analysis.png)
+![Employee 360 Analysis](Screenshots/Page 2.png)
 
 ## How to Use
 1. Clone or download this repository.
